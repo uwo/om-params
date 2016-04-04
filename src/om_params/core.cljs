@@ -30,6 +30,10 @@
                   (< (count query) 3))
       {:search ast})))
 
+(defmethod read :root-query
+  [env k params]
+  {:value {:search/results []}})
+
 (defn send-to-chan [c]
   (fn [{:keys [search]} cb]
     (when search
@@ -72,6 +76,18 @@
           [(search-field this (:query (om/get-params this)))]
           (not (empty? results)) (conj (result-list results)))))))
 
+(def auto-completer (om/factory AutoCompleter))
+
+(defui Root
+  static om/IQuery
+  (query [_]
+    [{:root-query (om/get-query AutoCompleter)}])
+  Object
+  (render [this]
+    (let [{:keys [root-query]} (om/props this)]
+      (dom/div nil
+               (auto-completer root-query)))))
+
 (def send-chan (chan))
 
 (def reconciler
@@ -83,5 +99,5 @@
 
 (search-loop send-chan)
 
-(om/add-root! reconciler AutoCompleter
+(om/add-root! reconciler Root
   (gdom/getElement "app"))
