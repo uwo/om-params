@@ -31,8 +31,13 @@
       {:search ast})))
 
 (defmethod read :root-query
-  [env k params]
-  {:value {:search/results []}})
+  [{:keys [query target parser ast state] :as env} k params]
+  (let [val (parser env query target)]
+    (if (and (= target :search)
+          (not (empty? val)))
+      {:value (select-keys @state [:search/results])
+       :search (om.next.impl.parser/expr->ast (first val))}
+      {:value val})))
 
 (defn send-to-chan [c]
   (fn [{:keys [search]} cb]
